@@ -29,7 +29,7 @@ module LUIT
 	def self.mY
 		@window.mouse_y
 	end
-	
+
 	#Raspberry pi touchscreen hack
 	def self.updateTouch()
 		if @touchDown
@@ -62,7 +62,7 @@ module LUIT
 		def draw_rel(x = 0, y = 0)
 			draw(x - (@w/2), y - (@h/2))
 		end
-		
+
 		def updateHover(x, y)
 			@hover = LUIT.mX.between?(x, x + @w) && LUIT.mY.between?(y, y + @h)
 		end
@@ -165,28 +165,29 @@ module LUIT
 	end
 
 	class ScannerInput
-		attr_reader :scanning
-		def initialize(holder, id, window)
+		attr_reader :scnning
+		def initialize(holder, id)
 			@field = Gosu::TextInput.new
-			@window = window
+			@window = LUIT.window
 			@holder = holder
 			@id = id
 		end
 
 		def update
-			if Gosu::button_down?(Gosu::KbReturn) && @scanning
+			if Gosu::button_down?(Gosu::KbReturn) && @scaning
 				@holder.onScan(@field.text)
 				@field.text = ""
+				stop
 			end
 		end
 
 		def stop
-			@scanning = false
+			@scaning = false
 			@window.text_input = nil if @window.text_input == @field
 		end
 
 		def scan
-			@scanning = true
+			@scaning = true
 			@window.text_input = @field
 		end
 	end
@@ -244,7 +245,7 @@ module LUIT
 			Gosu::draw_rect(@x + x, @y + y + 10, @w, 10, @buttonColor, LUIT.z)
 			Gosu::draw_rect(@x + x + @value, @y + y, 10, @h, @buttonColor, LUIT.z + 1)
 		end
-		
+
 		def updateHover(x, y)
 			@hover = LUIT.mX.between?(x - 10, x + @w + 20) && LUIT.mY.between?(y - 10, y + @h + 20)
 		end
@@ -278,11 +279,11 @@ module LUIT
 			Gosu::draw_rect(@x + x + 10, @y + y, 10, @h, @buttonColor, LUIT.z)
 			Gosu::draw_rect(@x + x, @y + y  + @value, @w, 10, @buttonColor, LUIT.z + 1)
 		end
-		
+
 		def updateHover(x, y)
 			@hover = LUIT.mX.between?(x - 10, x + @w + 20) && LUIT.mY.between?(y - 10, y + @h + 20)
 		end
-		
+
 		def update(x = 0, y = 0)
 			x += @x
 			y += @y
@@ -423,9 +424,9 @@ if __FILE__ == $0
 	class Test < Gosu::Window
 		def initialize
 			super(1000, 1000, false)
-			
+
 			LUIT.config(window: self)
-			
+
 			@LUITElements = []
 			@LUITElements << LUIT::Button.new(self, 1, 0, 0, "Test")
 			@LUITElements << LUIT::Button.new(self, 2, 111, 111, "Big button", 200, 70)
@@ -443,6 +444,7 @@ if __FILE__ == $0
 				@list << LUIT::Button.new(self, 1, 0, 0, "Test", 0, 50)
 			end
 			@font = Gosu::Font.new(30)
+			@scanner = LUIT::ScannerInput.new(self, "dik")
 		end
 
 		def draw
@@ -452,12 +454,20 @@ if __FILE__ == $0
 
 		def update
 			@LUITElements.each {|e| e.update}
+			@scanner.update
 		end
 
 		def button_down(id)
-			if id == Gosu::KbSpace
+			case id
+			when Gosu::KbSpace
 				@list << LUIT::Button.new(self, 1, 0, 0, "Test", 0, 50)
+			when Gosu::KbX
+				@scanner.scan
 			end
+		end
+
+		def onScan(text)
+			puts text
 		end
 
 		def onClick(id)
